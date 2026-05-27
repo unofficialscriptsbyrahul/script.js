@@ -1,6 +1,6 @@
 // ==UserScript==
-// @name         Wallet Automation
-// @namespace    wallet-bot
+// @name         Wallet Automation Base
+// @namespace    wallet-automation
 // @version      1.0
 // @description  Firebase Realtime Automation Base
 // @match        *://*/*
@@ -9,7 +9,35 @@
 
 (async function () {
 
+  // =========================
+  // PREVENT DOUBLE LOAD
+  // =========================
+
+  if (window.__WALLET_BOT__) return;
+
+  window.__WALLET_BOT__ = true;
+
   console.log("Wallet Automation Loaded");
+
+  // =========================
+  // LOAD ERUDA
+  // =========================
+
+  const erudaScript =
+    document.createElement("script");
+
+  erudaScript.src =
+    "https://cdn.jsdelivr.net/npm/eruda";
+
+  document.body.appendChild(erudaScript);
+
+  erudaScript.onload = () => {
+
+    eruda.init();
+
+    console.log("Eruda Ready");
+
+  };
 
   // =========================
   // LOAD FIREBASE SDK
@@ -65,10 +93,6 @@
 
     };
 
-    // =========================
-    // INIT FIREBASE
-    // =========================
-
     firebase.initializeApp(
       firebaseConfig
     );
@@ -81,7 +105,7 @@
     );
 
     // =========================
-    // GLOBAL BOT STATE
+    // GLOBAL STATE
     // =========================
 
     const BOT = {
@@ -90,9 +114,13 @@
 
       selectedAmount: "100",
 
-      logs: [],
+      autoClick: false,
 
-      observer: null
+      clickDelay: 1000,
+
+      observer: null,
+
+      logs: []
 
     };
 
@@ -102,11 +130,17 @@
 
     async function log(message) {
 
-      console.log("[BOT]", message);
+      console.log(
+        "[BOT]",
+        message
+      );
 
       BOT.logs.push({
+
         message,
+
         time: Date.now()
+
       });
 
       try {
@@ -128,10 +162,12 @@
 
       }
 
+      updateLogsUI(message);
+
     }
 
     // =========================
-    // FLOATING UI PANEL
+    // UI PANEL
     // =========================
 
     function createPanel() {
@@ -154,6 +190,11 @@
           value="100"
         />
 
+        <label>
+          <input type="checkbox" id="autoClickToggle" />
+          Auto Click
+        </label>
+
         <button id="startBtn">
           START
         </button>
@@ -175,7 +216,7 @@
     }
 
     // =========================
-    // PANEL STYLE
+    // STYLES
     // =========================
 
     function injectStyles() {
@@ -191,7 +232,7 @@
           right:20px;
           bottom:20px;
 
-          width:240px;
+          width:260px;
 
           background:white;
 
@@ -210,6 +251,7 @@
 
         #wallet-header{
 
+          font-size:18px;
           font-weight:bold;
           margin-bottom:10px;
 
@@ -240,11 +282,39 @@
 
           font-size:12px;
 
+          background:#f5f5f5;
+
+          padding:8px;
+
+          border-radius:10px;
+
         }
 
       `;
 
       document.head.appendChild(style);
+
+    }
+
+    // =========================
+    // UPDATE LOG UI
+    // =========================
+
+    function updateLogsUI(message) {
+
+      const logBox =
+        document.querySelector(
+          "#walletLogs"
+        );
+
+      if (!logBox) return;
+
+      const item =
+        document.createElement("div");
+
+      item.innerText = message;
+
+      logBox.prepend(item);
 
     }
 
@@ -269,6 +339,11 @@
           "#amountInput"
         );
 
+      const autoClickToggle =
+        document.querySelector(
+          "#autoClickToggle"
+        );
+
       startBtn.onclick = () => {
 
         BOT.active = true;
@@ -276,11 +351,12 @@
         BOT.selectedAmount =
           amountInput.value;
 
+        BOT.autoClick =
+          autoClickToggle.checked;
+
         startObserver();
 
-        log(
-          "Bot Started"
-        );
+        log("Bot Started");
 
       };
 
@@ -290,16 +366,14 @@
 
         stopObserver();
 
-        log(
-          "Bot Stopped"
-        );
+        log("Bot Stopped");
 
       };
 
     }
 
     // =========================
-    // VISIBILITY CHECK
+    // ELEMENT VISIBILITY
     // =========================
 
     function isVisible(el) {
@@ -324,35 +398,87 @@
     }
 
     // =========================
-    // FILTER LOGIC
+    // FIND MATCHING ELEMENTS
     // =========================
 
-    function filterAmounts() {
+    function scanAmounts() {
 
       if (!BOT.active) return;
 
-      document
-        .querySelectorAll("*")
-        .forEach(el => {
+      const elements =
+        [...document.querySelectorAll("*")]
+        .filter(el => {
 
-          if (
-            el.innerText?.includes("₹")
-          ) {
-
-            if (
-              el.innerText.includes(
-                `₹${BOT.selectedAmount}`
-              )
-            ) {
-
-              el.style.outline =
-                "2px solid green";
-
-            }
-
-          }
+          return (
+            el.innerText &&
+            el.innerText.includes(
+              `₹${BOT.selectedAmount}`
+            )
+          );
 
         });
+
+      elements.forEach(el => {
+
+        el.style.outline =
+          "2px solid lime";
+
+        const button =
+          findNearbyButton(el);
+
+        if (
+          button &&
+          isVisible(button)
+        ) {
+
+          button.style.outline =
+            "2px solid red";
+
+          log(
+            `Matched ₹${BOT.selectedAmount}`
+          );
+
+          // OPTIONAL AUTO CLICK
+          // Enable carefully only in safe/testing environments.
+          // if (BOT.autoClick) {
+          //   setTimeout(() => {
+          //     button.click();
+          //     log("Button Clicked");
+          //   }, BOT.clickDelay);
+          // }
+
+        }
+
+      });
+
+    }
+
+    // =========================
+    // FIND NEARBY BUTTON
+    // =========================
+
+    function findNearbyButton(el) {
+
+      let parent =
+        el.parentElement;
+
+      while (parent) {
+
+        const button =
+          parent.querySelector(
+            "button"
+          );
+
+        if (button) {
+          return button;
+        }
+
+        parent =
+          parent.parentElement;
+
+      }
+
+      return null;
 
     }
 
@@ -367,19 +493,19 @@
       BOT.observer =
         new MutationObserver(() => {
 
-          filterAmounts();
+          scanAmounts();
 
         });
 
       BOT.observer.observe(
         document.body,
         {
-
           childList: true,
           subtree: true
-
         }
       );
+
+      scanAmounts();
 
     }
 
@@ -389,9 +515,7 @@
 
     function stopObserver() {
 
-      if (
-        BOT.observer
-      ) {
+      if (BOT.observer) {
 
         BOT.observer.disconnect();
 
@@ -402,7 +526,7 @@
     }
 
     // =========================
-    // REALTIME SETTINGS LISTENER
+    // REALTIME SETTINGS
     // =========================
 
     db.collection("settings")
@@ -412,12 +536,6 @@
 
           const data =
             doc.data();
-
-          BOT.active =
-            data.active;
-
-          BOT.selectedAmount =
-            data.selected_amount;
 
           console.log(
             "Realtime Settings",
@@ -429,7 +547,7 @@
       });
 
     // =========================
-    // INITIALIZE UI
+    // INITIALIZE
     // =========================
 
     createPanel();
