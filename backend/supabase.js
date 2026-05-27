@@ -1,0 +1,5 @@
+export const SUPABASE_URL =
+"https://drxsofkrssxslczjsjvi.supabase.co";
+
+export const SUPABASE_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyeHNvZmtyc3N4c2xjempzanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTEzMzYsImV4cCI6MjA5NTM4NzMzNn0.2Z4LSse-LtNoqyU_uVBxSyS3iWoT5tz8QAHLYekkPpY";
