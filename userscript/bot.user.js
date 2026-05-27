@@ -10,51 +10,65 @@
     "Wallet Automation Loaded"
   );
 
-  // LOAD SUPABASE SDK
-  const script =
+  // LOAD FIREBASE APP
+  const appScript =
   document.createElement("script");
 
-  script.src =
-  "https://cdn.jsdelivr.net/npm/@supabase/supabase-js";
+  appScript.src =
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js";
 
-  document.body.appendChild(script);
+  document.body.appendChild(appScript);
 
-  script.onload = async () => {
+  // LOAD FIRESTORE
+  const dbScript =
+  document.createElement("script");
+
+  dbScript.src =
+  "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js";
+
+  document.body.appendChild(dbScript);
+
+  dbScript.onload = () => {
+
+    // FIREBASE CONFIG
+    const firebaseConfig = {
+
+      apiKey: "AIzaSyBq_EeGjwmyx1Y9z-8M9oy6KoGFa7pNuC8",
+
+      authDomain: "wallet-automation-75a22.firebaseapp.com",
+
+      projectId: "wallet-automation-75a22",
+
+      storageBucket: "wallet-automation-75a22.firebasestorage.app",
+
+      messagingSenderId:
+      "49734789897",
+
+      appId: "1:49734789897:web:64ca55d6c6efc591e841d8"
+
+    };
+
+    // INIT FIREBASE
+    firebase.initializeApp(
+      firebaseConfig
+    );
+
+    const db =
+    firebase.firestore();
 
     console.log(
-      "Supabase Loaded"
+      "Firestore Connected"
     );
 
-    // CREATE CLIENT
-    const client =
-    supabase.createClient(
+    // TEST LOG INSERT
+    db.collection("logs")
+    .add({
 
-      "https://drxsofkrssxslczjsjvi.supabase.co",
+      message:"Bot Started",
 
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyeHNvZmtyc3N4c2xjempzanZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MTEzMzYsImV4cCI6MjA5NTM4NzMzNn0.2Z4LSse-LtNoqyU_uVBxSyS3iWoT5tz8QAHLYekkPpY"
+      createdAt:Date.now()
 
-    );
-
-    console.log(
-      "Client Connected",
-      client
-    );
-
-    // TEST DATABASE
-    const { data,error } =
-    await client
-    .from("queue")
-    .select("*");
-
-    console.log(
-      "QUEUE DATA:",
-      data
-    );
-
-    console.log(
-      "ERROR:",
-      error
-    );
+    });
 
   };
 
